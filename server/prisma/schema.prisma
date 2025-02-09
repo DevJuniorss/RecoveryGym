@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int          @id @default(autoincrement())
+  teacher   Teacher?
+  name      String
+  username  String       @unique
+  password  String
+  role      String       @default("TEACHER") // ADMIN
+  notices   Notice[]
+  notifications Notification[] // Relacionamento com Notification
+
+  @@map("users")
+}
+
+model Teacher {
+  id        Int        @id @default(autoincrement())
+  user      User       @relation(fields: [id], references: [id], onDelete: Cascade)
+  student   Student[]
+  FollowUp  FollowUp[]
+
+  cpf       String?    @unique
+  cref      String?    @unique
+  phone     String?
+  email     String?    @unique
+
+  @@map("teachers")
+}
+
+model Student {
+  id          Int      @id @default(autoincrement())
+  teacherId   Int?
+  anamnesisId Int?
+
+  teacher     Teacher? @relation(fields: [teacherId], references: [id])
+  anamnesis   Anamnesis?
+  FollowUp    FollowUp[]
+
+  name        String
+  phone       String?
+  email       String?   @unique
+  notes       String?
+
+  @@map("students")
+}
+
+model Anamnesis {
+  id        Int    @id @default(autoincrement())
+  studentId Int    @unique
+
+  Student   Student @relation(fields: [studentId], references: [id])
+
+  painLocation           String
+  painStartDate          String
+  painOnset              String
+  painProgression        String
+  painType               String
+  painDuration           String
+  painRadiation          String
+  painIntensity          String
+  painActivityLimitation String
+  painPeakTime           String
+  painReliefFactors      String
+  painWorseningFactors   String
+  painRelatedSymptoms    String
+
+  @@map("anamnesiss")
+}
+
+model FollowUp {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  teacherId Int
+
+  student   Student  @relation(fields: [studentId], references: [id])
+  teacher   Teacher  @relation(fields: [teacherId], references: [id])
+
+  muscleGroup String
+  date        DateTime
+  notes       String
+
+  @@map("followups")
+}
+
+model Notice {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
+
+  @@map("notices")
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  recipientId Int
+  recipient   User     @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
